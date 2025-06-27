@@ -9,7 +9,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify, render_template, session, g
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-import PyMuPDF
+import fitz  # PyMuPDF
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -192,7 +192,7 @@ class PDFChatbot:
             
         try:
             logger.info(f"Extracting text from PDF: {pdf_path}")
-            doc = PyMuPDF.open(pdf_path)
+            doc = fitz.open(pdf_path)
             text = ""
             page_count = len(doc)
             
