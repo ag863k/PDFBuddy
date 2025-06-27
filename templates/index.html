@@ -27,6 +27,7 @@
             background: white;
             border-radius: 20px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
@@ -44,6 +45,7 @@
             border-radius: 15px;
             padding: 3rem;
             text-align: center;
+            -webkit-transition: all 0.3s ease;
             transition: all 0.3s ease;
             background: var(--secondary-color);
         }
@@ -92,11 +94,13 @@
             border-radius: 10px;
             padding: 0.75rem 1.5rem;
             font-weight: 600;
+            -webkit-transition: all 0.3s ease;
             transition: all 0.3s ease;
         }
 
         .btn-primary:hover {
             background: #1d4ed8;
+            -webkit-transform: translateY(-2px);
             transform: translateY(-2px);
         }
 
@@ -110,6 +114,7 @@
             border-radius: 10px;
             border: 2px solid var(--border-color);
             padding: 0.75rem;
+            -webkit-transition: border-color 0.3s ease;
             transition: border-color 0.3s ease;
         }
 
@@ -124,6 +129,10 @@
 
         .loading.show {
             display: block;
+        }
+
+        .hidden {
+            display: none;
         }
 
         .file-info {
@@ -190,7 +199,7 @@
                                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                                 <h4>Drop your PDF here or click to browse</h4>
                                 <p class="text-muted">Maximum file size: 16MB</p>
-                                <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                                <input type="file" id="file-input" accept=".pdf" class="hidden">
                                 <button class="btn btn-primary mt-3" onclick="document.getElementById('file-input').click()">
                                     <i class="fas fa-folder-open me-2"></i>Choose PDF File
                                 </button>
@@ -204,9 +213,9 @@
                             </div>
                         </div>
 
-                        <div id="file-info" style="display: none;"></div>
+                        <div id="file-info" class="hidden"></div>
 
-                        <div id="chat-section" style="display: none;">
+                        <div id="chat-section" class="hidden">
                             <hr class="my-4">
                             
                             <div class="row">
@@ -251,7 +260,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-history me-2"></i>Conversation History</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close history"></button>
                 </div>
                 <div class="modal-body" id="history-content">
                 </div>
@@ -322,7 +331,7 @@
             .then(data => {
                 if (data.success) {
                     document.getElementById('upload-section').style.display = 'none';
-                    document.getElementById('chat-section').style.display = 'block';
+                    document.getElementById('chat-section').classList.remove('hidden');
                     
                     document.getElementById('file-info').innerHTML = `
                         <div class="file-info">
@@ -330,7 +339,7 @@
                             <strong>${data.filename}</strong> uploaded and processed successfully!
                         </div>
                     `;
-                    document.getElementById('file-info').style.display = 'block';
+                    document.getElementById('file-info').classList.remove('hidden');
                     
                     showAlert('PDF processed successfully! You can now ask questions.', 'success');
                 } else {
