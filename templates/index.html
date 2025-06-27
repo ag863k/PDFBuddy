@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFBuddy - AI-Powered PDF Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #f8fafc;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--border-color);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: var(--secondary-color);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: #f1f5f9;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-color);
+            background: #ecfdf5;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            background: var(--secondary-color);
+        }
+
+        .message {
+            padding: 1rem;
+            margin: 0.5rem;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: var(--primary-color);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: white;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-secondary {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            padding: 0.75rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .file-info {
+            background: var(--accent-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .sources {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 1rem;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 1.5rem;
+                border-radius: 15px 15px 0 0;
+            }
+            
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-xl-8 col-lg-10">
+                <div class="main-container">
+                    <div class="header">
+                        <h1 class="mb-3"><i class="fas fa-file-pdf me-3"></i>PDFBuddy</h1>
+                        <p class="mb-0">Upload your PDF and start an intelligent conversation with your document</p>
+                    </div>
+                    
+                    <div class="p-4">
+                        <div id="upload-section">
+                            <div class="upload-area" id="upload-area">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h4>Drop your PDF here or click to browse</h4>
+                                <p class="text-muted">Maximum file size: 16MB</p>
+                                <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                                <button class="btn btn-primary mt-3" onclick="document.getElementById('file-input').click()">
+                                    <i class="fas fa-folder-open me-2"></i>Choose PDF File
+                                </button>
+                            </div>
+                            
+                            <div id="upload-loading" class="loading text-center mt-3">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Processing your PDF...</p>
+                            </div>
+                        </div>
+
+                        <div id="file-info" style="display: none;"></div>
+
+                        <div id="chat-section" style="display: none;">
+                            <hr class="my-4">
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <h4><i class="fas fa-comments me-2"></i>Chat with your PDF</h4>
+                                    
+                                    <div class="chat-container mb-3" id="chat-container">
+                                        <div class="message bot">
+                                            <i class="fas fa-robot me-2"></i>
+                                            Hello! I've analyzed your PDF. Ask me anything about the document content.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="question-input" 
+                                               placeholder="Ask a question about your PDF..." 
+                                               onkeypress="handleKeyPress(event)">
+                                        <button class="btn btn-primary" onclick="sendQuestion()" id="send-btn">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="mt-3">
+                                        <button class="btn btn-outline-secondary me-2" onclick="resetSession()">
+                                            <i class="fas fa-refresh me-2"></i>Upload New PDF
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="loadHistory()">
+                                            <i class="fas fa-history me-2"></i>View History
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-history me-2"></i>Conversation History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="history-content">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let isUploading = false;
+        let isProcessing = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+        });
+
+        function handleFileUpload(file) {
+            if (isUploading) return;
+            
+            if (file.type !== 'application/pdf') {
+                showAlert('Please select a PDF file.', 'danger');
+                return;
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showAlert('File size must be less than 16MB.', 'danger');
+                return;
+            }
+
+            isUploading = true;
+            document.getElementById('upload-loading').classList.add('show');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('upload-section').style.display = 'none';
+                    document.getElementById('chat-section').style.display = 'block';
+                    
+                    document.getElementById('file-info').innerHTML = `
+                        <div class="file-info">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>${data.filename}</strong> uploaded and processed successfully!
+                        </div>
+                    `;
+                    document.getElementById('file-info').style.display = 'block';
+                    
+                    showAlert('PDF processed successfully! You can now ask questions.', 'success');
+                } else {
+                    showAlert(data.error || 'Upload failed', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('An error occurred during upload.', 'danger');
+            })
+            .finally(() => {
+                isUploading = false;
+                document.getElementById('upload-loading').classList.remove('show');
+            });
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !isProcessing) {
+                sendQuestion();
+            }
+        }
+
+        function sendQuestion() {
+            if (isProcessing) return;
+            
+            const questionInput = document.getElementById('question-input');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                showAlert('Please enter a question.', 'warning');
+                return;
+            }
+
+            isProcessing = true;
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div>';
+            sendBtn.disabled = true;
+
+            addMessage(question, 'user');
+            questionInput.value = '';
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                } else {
+                    addMessage(data.answer, 'bot', data.sources);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('An error occurred while processing your question.', 'danger');
+            })
+            .finally(() => {
+                isProcessing = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                sendBtn.disabled = false;
+                questionInput.focus();
+            });
+        }
+
+        function addMessage(content, type, sources = null) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let messageHTML = '';
+            if (type === 'user') {
+                messageHTML = `<i class="fas fa-user me-2"></i>${content}`;
+            } else {
+                messageHTML = `<i class="fas fa-robot me-2"></i>${content}`;
+                
+                if (sources && sources.length > 0) {
+                    messageHTML += `
+                        <div class="sources mt-2">
+                            <strong><i class="fas fa-quote-left me-1"></i>Source excerpts:</strong>
+                            ${sources.map((source, index) => 
+                                `<div class="mt-1"><small><strong>Excerpt ${index + 1}:</strong> ${source.substring(0, 200)}...</small></div>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+            }
+            
+            messageDiv.innerHTML = messageHTML;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function resetSession() {
+            if (confirm('Are you sure you want to upload a new PDF? This will clear the current conversation.')) {
+                fetch('/reset', { method: 'POST' })
+                .then(() => {
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error resetting session.', 'danger');
+                });
+            }
+        }
+
+        function loadHistory() {
+            fetch('/history')
+            .then(response => response.json())
+            .then(data => {
+                const historyContent = document.getElementById('history-content');
+                
+                if (data.length === 0) {
+                    historyContent.innerHTML = '<p class="text-muted">No conversation history found.</p>';
+                } else {
+                    historyContent.innerHTML = data.map(conv => `
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="message user mb-2">
+                                <i class="fas fa-user me-2"></i>${conv.question}
+                            </div>
+                            <div class="message bot">
+                                <i class="fas fa-robot me-2"></i>${conv.answer}
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                ${new Date(conv.timestamp).toLocaleString()}
+                            </small>
+                        </div>
+                    `).join('');
+                }
+                
+                new bootstrap.Modal(document.getElementById('historyModal')).show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Error loading history.', 'danger');
+            });
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.querySelector('.main-container .p-4').insertBefore(alertDiv, document.querySelector('.main-container .p-4').firstChild);
+            
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
